@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة المتاجر والاشتراكات</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0b1120;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #ef4444;
+            --accent-hover: #dc2626;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .auth-wrapper { max-width: 440px; margin: 50px auto; background: var(--bg-card); padding: 28px; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+        .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 22px; background: var(--bg-input); padding: 6px; border-radius: 10px; }
+        .auth-tab { padding: 10px; border: none; border-radius: 8px; background: transparent; color: var(--text-muted); font-weight: bold; cursor: pointer; }
+        .auth-tab.active { background: var(--accent); color: #fff; }
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 15px 22px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .menu-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); font-size: 1.25rem; padding: 7px 13px; border-radius: 8px; cursor: pointer; }
+        .menu-btn:hover { border-color: var(--accent); }
+        .store-title { font-size: 1.2rem; color: var(--accent); font-weight: 700; }
+        .store-sub { font-size: .82rem; color: var(--text-muted); }
+        .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 90; }
+        .drawer { position: fixed; top: 0; right: 0; width: 280px; height: 100vh; background: var(--bg-card); border-left: 1px solid var(--border); padding: 22px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .drawer-item { width: 100%; text-align: right; padding: 12px 14px; border-radius: 9px; border: 1px solid transparent; background: var(--bg-input); color: var(--text-main); font-weight: 600; cursor: pointer; }
+        .drawer-item.active, .drawer-item:hover { border-color: var(--accent); background: rgba(239,68,68,.14); }
+        .card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .card h3 { margin-bottom: 14px; font-size: 1.05rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+        .stat-box { background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+        .stat-label { font-size: .8rem; color: var(--text-muted); margin-bottom: 6px; }
+        .stat-val { font-size: 1.25rem; font-weight: 700; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; margin-bottom: 6px; font-size: .85rem; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); font-size: .95rem; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+        button { padding: 10px 16px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; transition: background .2s; }
+        button:hover { background: var(--accent-hover); }
+        .btn-secondary { background: #475569; }
+        .btn-secondary:hover { background: #64748b; }
+        .btn-success { background: #16a34a; padding: 6px 12px; font-size: .8rem; }
+        .btn-success:hover { background: #15803d; }
+        .btn-danger { background: #991b1b; padding: 6px 12px; font-size: .8rem; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-sm { padding: 5px 10px; font-size: .8rem; }
+        .whatsapp-box { background: rgba(34,197,94,.14); border: 1px solid rgba(34,197,94,.4); color: #bbf7d0; padding: 14px; border-radius: 10px; margin-top: 14px; font-size: .9rem; line-height: 1.7; }
+        .whatsapp-link { display: inline-block; margin-top: 8px; background: #16a34a; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; }
+        .slot-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: .76rem; font-weight: 600; }
+        .badge-avail { background: rgba(34,197,94,.16); color: #4ade80; border: 1px solid rgba(34,197,94,.35); }
+        .badge-sold { background: rgba(239,68,68,.18); color: #f87171; border: 1px solid rgba(239,68,68,.35); }
+        .badge-loss { background: rgba(245,158,11,.18); color: #fbbf24; border: 1px solid rgba(245,158,11,.35); }
+        .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background: rgba(15,23,42,.75); color: var(--text-muted); font-size: .85rem; white-space: nowrap; }
+        .mono { font-family: monospace; direction: ltr; display: inline-block; background: var(--bg-input); padding: 3px 7px; border-radius: 5px; border: 1px solid var(--border); font-size: .84rem; }
+        .field-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .alert { padding: 12px 14px; border-radius: 8px; margin-bottom: 14px; font-size: .9rem; line-height: 1.6; }
+        .alert-error { background: rgba(239,68,68,.16); border: 1px solid #ef4444; color: #fca5a5; }
+        .alert-success { background: rgba(34,197,94,.16); border: 1px solid #22c55e; color: #86efac; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH SECTION -->
+    <div id="auth-section" class="auth-wrapper">
+        <div class="auth-tabs">
+            <button type="button" id="tab-login" class="auth-tab active">تسجيل دخول</button>
+            <button type="button" id="tab-register" class="auth-tab">طلب اشتراك ستور</button>
+        </div>
+
+        <div id="auth-msg" class="alert hidden"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="text" id="login-email" required placeholder="store@example.com">
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" style="width: 100%;">دخول</button>
+
+            <div class="whatsapp-box">
+                <strong>للاشتراك الشهري أو تجديد الباقة:</strong><br>
+                تواصل واتساب على الرقم: <span class="mono">01289421525</span><br>
+                <a class="whatsapp-link" href="https://wa.me/201289421525" target="_blank" rel="noopener">تواصل واتساب الآن</a>
+            </div>
+        </form>
+
+        <form id="register-form" class="hidden">
+            <div class="form-group">
+                <label>اسم الستور</label>
+                <input type="text" id="reg-store-name" required placeholder="مثال: سبايدر ستور">
+            </div>
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" id="reg-email" required placeholder="store@example.com">
+            </div>
+            <div class="form-group">
+                <label>رقم الواتساب الخاص بالتاجر</label>
+                <input type="text" id="reg-phone" required placeholder="01xxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="reg-password" required placeholder="اختر كلمة مرور">
+            </div>
+            <button type="submit" style="width: 100%;">إرسال طلب الانضمام</button>
+
+            <div class="whatsapp-box">
+                بعد إرسال الطلب، لازم تكلم الإدارة واتساب على رقم <span class="mono">01289421525</span> لتفعيل الاشتراك الشهري وفتح حسابك.<br>
+                <a class="whatsapp-link" href="https://wa.me/201289421525" target="_blank" rel="noopener">ابعت رسالة واتساب للتفعيل</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- APP SECTION -->
+    <div id="app-section" class="container hidden">
+        <header>
+            <div class="header-left">
+                <button type="button" id="open-drawer-btn" class="menu-btn" title="القائمة">☰</button>
+                <div>
+                    <div id="current-store-name" class="store-title">اسم الستور</div>
+                    <div id="current-store-email" class="store-sub">store@example.com</div>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span id="sub-badge" class="badge badge-avail">نشط</span>
+                <button type="button" id="logout-btn" class="btn-secondary btn-sm">تسجيل خروج</button>
+            </div>
+        </header>
+
+        <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
+        <nav id="drawer" class="drawer hidden">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong>أقسام النظام</strong>
+                <button type="button" id="close-drawer-btn" class="btn-secondary btn-sm">✕</button>
+            </div>
+            <button type="button" class="drawer-item active" data-view="sales">المبيعات والحركات</button>
+            <button type="button" class="drawer-item" data-view="full-accounts">فول أكونت (الحسابات الكاملة)</button>
+            <button type="button" id="nav-admin-btn" class="drawer-item hidden" data-view="admin">لوحة الأدمن والاشتراكات</button>
+        </nav>
+
+        <div id="app-msg" class="alert hidden"></div>
+
+        <!-- VIEW 1: SALES & MOVEMENTS -->
+        <section id="view-sales">
+            <div class="grid-3" style="margin-bottom: 20px;">
+                <div class="stat-box">
+                    <div class="stat-label">إجمالي المبيعات</div>
+                    <div id="stat-revenue" class="stat-val" style="color: #4ade80;">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">إجمالي الخسائر / الخصومات</div>
+                    <div id="stat-losses" class="stat-val" style="color: #fbbf24;">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">صافي الربح</div>
+                    <div id="stat-net" class="stat-val">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>تسجيل عملية جديدة (بيع / خسارة / نقل زبون)</h3>
+                <form id="sale-form">
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>نوع العملية</label>
+                            <select id="tx-type">
+                                <option value="sale">بيع نسخة / حساب</option>
+                                <option value="loss">خسارة / خصم على أكونت</option>
+                                <option value="transfer">نقل / سحب أكونت من زبون لزبون</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>اسم اللعبة / الأكونت</label>
+                            <input type="text" id="tx-game" required placeholder="مثال: Spider-Man / GTA V">
+                        </div>
+                        <div class="form-group">
+                            <label>إيميل الأكونت</label>
+                            <input type="text" id="tx-email" required placeholder="account@mail.com">
+                        </div>
+                    </div>
+
+                    <div id="sale-fields" class="grid-3">
+                        <div class="form-group">
+                            <label>النسخة المباعة</label>
+                            <select id="tx-slot">
+                                <option value="Primary 4">Primary 4</option>
+                                <option value="Primary 5">Primary 5</option>
+                                <option value="Secondary">Secondary</option>
+                                <option value="Full Account">Full Account (يلغي الكل)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>سعر الشراء</label>
+                            <input type="number" step="0.01" id="tx-buy-price" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>سعر البيع</label>
+                            <input type="number" step="0.01" id="tx-sell-price" value="0">
+                        </div>
+                    </div>
+
+                    <div id="loss-fields" class="grid-2 hidden">
+                        <div class="form-group">
+                            <label>قيمة الخسارة</label>
+                            <input type="number" step="0.01" id="tx-loss-amount" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>سبب الخسارة</label>
+                            <input type="text" id="tx-loss-reason" placeholder="تغيير باسورد، بان، تعويض...">
+                        </div>
+                    </div>
+
+                    <div id="transfer-fields" class="grid-2 hidden">
+                        <div class="form-group">
+                            <label>من زبون</label>
+                            <input type="text" id="tx-from-customer" placeholder="اسم الزبون السابق">
+                        </div>
+                        <div class="form-group">
+                            <label>إلى زبون / مخزن</label>
+                            <input type="text" id="tx-to-customer" placeholder="اسم الزبون الجديد أو تم السحب">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>اسم الزبون / ملاحظة إضافية</label>
+                            <input type="text" id="tx-customer" placeholder="اختياري">
+                        </div>
+                        <div class="form-group">
+                            <label>ملاحظات</label>
+                            <input type="text" id="tx-notes" placeholder="أي تفاصيل إضافية">
+                        </div>
+                    </div>
+
+                    <button type="submit">حفظ العملية</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>سجل العمليات والمبيعات (<span id="tx-count">0</span>)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>النوع</th>
+                                <th>اللعبة / الأكونت</th>
+                                <th>الإيميل</th>
+                                <th>النسخة / التفاصيل</th>
+                                <th>شراء / بيع / خسارة</th>
+                                <th>الزبون / الحركة</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tx-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: FULL ACCOUNTS -->
+        <section id="view-full-accounts" class="hidden">
+            <div class="card">
+                <h3>تخصيص خانات الفول أكونت (إضافة / حذف خانات)</h3>
+                <div id="schema-builder"></div>
+                <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <button type="button" id="add-schema-field-btn" class="btn-secondary btn-sm">+ إضافة خانة</button>
+                    <button type="button" id="save-schema-btn" class="btn-sm">حفظ الخانات</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>إضافة / تحديث فول أكونت</h3>
+                <form id="full-acc-form">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>اسم اللعبة / الأكونت</label>
+                            <input type="text" id="fa-game" required placeholder="مثال: Spider-Man">
+                        </div>
+                        <div class="form-group">
+                            <label>الإيميل الأساسي للأكونت</label>
+                            <input type="text" id="fa-email" required placeholder="example@mail.com">
+                        </div>
+                    </div>
+
+                    <div id="fa-dynamic-fields" class="grid-2"></div>
+
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label>تحديد حالة النسخ يدوياً (اختياري)</label>
+                        <div class="grid-2">
+                            <label style="display:flex; align-items:center; gap:8px; color:var(--text-main);"><input type="checkbox" id="fa-p4" style="width:auto;"> Primary 4 مباع</label>
+                            <label style="display:flex; align-items:center; gap:8px; color:var(--text-main);"><input type="checkbox" id="fa-p5" style="width:auto;"> Primary 5 مباع</label>
+                            <label style="display:flex; align-items:center; gap:8px; color:var(--text-main);"><input type="checkbox" id="fa-sec" style="width:auto;"> Secondary مباع</label>
+                            <label style="display:flex; align-items:center; gap:8px; color:var(--text-main);"><input type="checkbox" id="fa-full" style="width:auto;"> Full Account مباع (يلغي الكل)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit">حفظ في الفول أكونت</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>قاعدة بيانات الفول أكونت (<span id="fa-count">0</span>)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead id="fa-thead"></thead>
+                        <tbody id="fa-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: ADMIN PANEL -->
+        <section id="view-admin" class="hidden">
+            <div class="card">
+                <h3>إعدادات حساب الأدمن</h3>
+                <form id="admin-pass-form" class="grid-2" style="align-items: end;">
+                    <div class="form-group" style="margin:0;">
+                        <label>باسورد الأدمن الجديد</label>
+                        <input type="password" id="new-admin-pass" required placeholder="أدخل باسورد جديد للأدمن">
+                    </div>
+                    <button type="submit">تحديث باسورد الأدمن</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>طلبات المتاجر والاشتراكات الشهرية (<span id="stores-count">0</span>)</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم الستور</th>
+                                <th>الإيميل</th>
+                                <th>واتساب التاجر</th>
+                                <th>الحالة</th>
+                                <th>نهاية الاشتراك</th>
+                                <th>تحكم الأدمن</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-stores-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script>
+        // ================== الإعدادات ==================
+        const SUPABASE_URL = 'https://xtbzdxzjyqvmmvletwxa.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_3Kdw8YMZytsRJqdr_5Us6g_GbtWaOqL';
+        const ADMIN_WHATSAPP = '01289421525';
+        const DEFAULT_SCHEMA = ['الباسورد', 'كود 2FA', 'أكواد الاسترداد', 'العملاء'];
+
+        const configured = !SUPABASE_URL.startsWith('PASTE_') && !SUPABASE_ANON_KEY.startsWith('PASTE_');
+        const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        let currentUser = null;
+        let storeData = null;
+        let draftSchema = [];
+
+        // DOM
+        const authSection = document.getElementById('auth-section');
+        const appSection = document.getElementById('app-section');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const authMsg = document.getElementById('auth-msg');
+        const appMsg = document.getElementById('app-msg');
+
+        const drawer = document.getElementById('drawer');
+        const drawerBackdrop = document.getElementById('drawer-backdrop');
+        const openDrawerBtn = document.getElementById('open-drawer-btn');
+        const closeDrawerBtn = document.getElementById('close-drawer-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const navAdminBtn = document.getElementById('nav-admin-btn');
+
+        const viewSales = document.getElementById('view-sales');
+        const viewFullAccounts = document.getElementById('view-full-accounts');
+        const viewAdmin = document.getElementById('view-admin');
+
+        // ---------- Helpers ----------
+        function escapeHtml(val) {
+            return String(val == null ? '' : val)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function escapeAttr(val) {
+            const js = String(val == null ? '' : val).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return escapeHtml(js);
+        }
+
+        function fmt(n) {
+            return (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+        }
+
+        function isValidEmailFormat(val) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+        }
+
+        function showAuthAlert(htmlText, isError = false) {
+            authMsg.innerHTML = htmlText;
+            authMsg.className = 'alert ' + (isError ? 'alert-error' : 'alert-success');
+            authMsg.classList.remove('hidden');
+        }
+
+        let appMsgTimer = null;
+        function showAppMsg(text, isError = false) {
+            appMsg.textContent = text;
+            appMsg.className = 'alert ' + (isError ? 'alert-error' : 'alert-success');
+            appMsg.classList.remove('hidden');
+            clearTimeout(appMsgTimer);
+            appMsgTimer = setTimeout(() => appMsg.classList.add('hidden'), 4000);
+        }
+
+        function setBusy(form, busy) {
+            form.querySelectorAll('button[type="submit"]').forEach(b => { b.disabled = busy; b.style.opacity = busy ? '.6' : '1'; });
+        }
+
+        function isSubscriptionActive(user) {
+            if (user.isAdmin) return true;
+            if (user.status !== 'approved') return false;
+            if (!user.expiresAt) return false;
+            return new Date(user.expiresAt).getTime() > Date.now();
+        }
+
+        function toUser(p) {
+            return {
+                id: p.id,
+                storeName: p.store_name || p.email,
+                email: p.email,
+                phone: p.phone,
+                status: p.status,
+                expiresAt: p.expires_at,
+                isAdmin: p.role === 'admin'
+            };
+        }
+
+        async function fetchProfile(uid) {
+            const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+            if (error) throw error;
+            return data ? toUser(data) : null;
+        }
+
+        // ---------- Store data (Supabase) ----------
+        async function loadStoreData(userId) {
+            const { data, error } = await sb.from('store_data')
+                .select('schema, full_accounts, transactions').eq('user_id', userId).maybeSingle();
+            if (error) throw error;
+            const d = data || {};
+            return {
+                schema: Array.isArray(d.schema) && d.schema.length ? d.schema : [...DEFAULT_SCHEMA],
+                fullAccounts: Array.isArray(d.full_accounts) ? d.full_accounts : [],
+                transactions: Array.isArray(d.transactions) ? d.transactions : []
+            };
+        }
+
+        // بترجع true لو الحفظ نجح. لو فشل بتعيد تحميل آخر نسخة من السيرفر.
+        async function persistStoreData() {
+            if (!currentUser || !storeData) return false;
+            const { error } = await sb.from('store_data').upsert({
+                user_id: currentUser.id,
+                schema: storeData.schema,
+                full_accounts: storeData.fullAccounts,
+                transactions: storeData.transactions,
+                updated_at: new Date().toISOString()
+            });
+            if (error) {
+                console.error(error);
+                try { storeData = await loadStoreData(currentUser.id); draftSchema = [...storeData.schema]; } catch {}
+                showAppMsg('فشل الحفظ على السيرفر. ممكن الاشتراك انتهى أو النت فاصل. اتحدّثت البيانات من السيرفر.', true);
+                return false;
+            }
+            return true;
+        }
+
+        // ---------- Auth Tabs ----------
+        tabLogin.addEventListener('click', () => {
+            tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+            loginForm.classList.remove('hidden'); registerForm.classList.add('hidden');
+            authMsg.classList.add('hidden');
+        });
+
+        tabRegister.addEventListener('click', () => {
+            tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+            registerForm.classList.remove('hidden'); loginForm.classList.add('hidden');
+            authMsg.classList.add('hidden');
+        });
+
+        // ---------- Register Store Request ----------
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!configured) return showAuthAlert('لازم تحط بيانات Supabase في أول الـ script الأول.', true);
+
+            const storeName = document.getElementById('reg-store-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            if (!isValidEmailFormat(email)) return showAuthAlert('يرجى إدخال بريد إلكتروني صحيح.', true);
+            if (password.length < 6) return showAuthAlert('كلمة المرور لازم تكون 6 حروف على الأقل.', true);
+
+            setBusy(registerForm, true);
+            const { error } = await sb.auth.signUp({
+                email, password,
+                options: { data: { store_name: storeName, phone } }
+            });
+            setBusy(registerForm, false);
+
+            if (error) {
+                const taken = /already|registered/i.test(error.message);
+                return showAuthAlert(
+                    taken
+                        ? 'هذا البريد مسجل بالفعل. تواصل على واتساب <span class="mono">' + ADMIN_WHATSAPP + '</span> لتفعيل الحساب.'
+                        : 'حصلت مشكلة: ' + escapeHtml(error.message),
+                    true
+                );
+            }
+
+            await sb.auth.signOut(); // الحساب مقفول لحد ما الأدمن يوافق
+            registerForm.reset();
+            showAuthAlert(
+                `تم تسجيل طلب انضمام <strong>${escapeHtml(storeName)}</strong> بنجاح!<br>` +
+                `عشان يتم قبول حسابك وتفعيل الاشتراك الشهري، ابعت رسالة واتساب على الرقم: <span class="mono">${ADMIN_WHATSAPP}</span>`
+            );
+        });
+
+        // ---------- Login ----------
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!configured) return showAuthAlert('لازم تحط بيانات Supabase في أول الـ script الأول.', true);
+
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
+            const password = document.getElementById('login-password').value;
+
+            if (!isValidEmailFormat(email)) return showAuthAlert('يرجى إدخال بريد إلكتروني صحيح.', true);
+
+            setBusy(loginForm, true);
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) {
+                    if (/confirm/i.test(error.message)) {
+                        return showAuthAlert('لازم تأكد بريدك الإلكتروني الأول (شوف رسالة التأكيد في الإيميل).', true);
+                    }
+                    return showAuthAlert('البريد الإلكتروني أو كلمة المرور غير صحيحة.', true);
+                }
+
+                const user = await fetchProfile(data.user.id);
+                if (!user) {
+                    await sb.auth.signOut();
+                    return showAuthAlert('الحساب ده غير موجود في النظام. تواصل مع الإدارة.', true);
+                }
+
+                if (!user.isAdmin) {
+                    if (user.status === 'pending') {
+                        await sb.auth.signOut();
+                        return showAuthAlert(
+                            `حساب <strong>${escapeHtml(user.storeName)}</strong> لسه في انتظار موافقة الأدمن.<br>` +
+                            `كلمني واتساب على <span class="mono">${ADMIN_WHATSAPP}</span> لتأكيد الاشتراك الشهري وتفعيل الحساب.`, true);
+                    }
+                    if (!isSubscriptionActive(user)) {
+                        await sb.auth.signOut();
+                        return showAuthAlert(
+                            `اشتراك <strong>${escapeHtml(user.storeName)}</strong> منتهي أو موقوف حالياً.<br>` +
+                            `لتجديد الاشتراك الشهري تواصل واتساب على <span class="mono">${ADMIN_WHATSAPP}</span>.`, true);
+                    }
+                }
+
+                await enterApp(user);
+            } catch (err) {
+                console.error(err);
+                showAuthAlert('حصلت مشكلة في الاتصال بالسيرفر. جرّب تاني.', true);
+            } finally {
+                setBusy(loginForm, false);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            if (sb) await sb.auth.signOut();
+            currentUser = null;
+            storeData = null;
+            appSection.classList.add('hidden');
+            authSection.classList.remove('hidden');
+            loginForm.reset();
+            authMsg.classList.add('hidden');
+        });
+
+        async function enterApp(user) {
+            currentUser = user;
+            storeData = await loadStoreData(user.id);
+            draftSchema = [...storeData.schema];
+
+            document.getElementById('current-store-name').textContent = user.storeName;
+            document.getElementById('current-store-email').textContent = user.email;
+
+            const subBadge = document.getElementById('sub-badge');
+            if (user.isAdmin) {
+                subBadge.textContent = 'حساب أدمن';
+                navAdminBtn.classList.remove('hidden');
+            } else {
+                subBadge.textContent = 'ساري حتى: ' + new Date(user.expiresAt).toLocaleDateString('ar-EG');
+                navAdminBtn.classList.add('hidden');
+            }
+            subBadge.className = 'badge badge-avail';
+
+            authSection.classList.add('hidden');
+            appSection.classList.remove('hidden');
+            switchView(user.isAdmin ? 'admin' : 'sales');
+            renderAll();
+        }
+
+        // ---------- Drawer & Navigation ----------
+        function setDrawer(open) {
+            drawer.classList.toggle('hidden', !open);
+            drawerBackdrop.classList.toggle('hidden', !open);
+        }
+
+        function switchView(viewName) {
+            document.querySelectorAll('.drawer-item').forEach(b => {
+                b.classList.toggle('active', b.dataset.view === viewName);
+            });
+            viewSales.classList.toggle('hidden', viewName !== 'sales');
+            viewFullAccounts.classList.toggle('hidden', viewName !== 'full-accounts');
+            viewAdmin.classList.toggle('hidden', viewName !== 'admin');
+            if (viewName === 'admin') renderAdminTable();
+        }
+
+        openDrawerBtn.addEventListener('click', () => setDrawer(true));
+        closeDrawerBtn.addEventListener('click', () => setDrawer(false));
+        drawerBackdrop.addEventListener('click', () => setDrawer(false));
+
+        document.querySelectorAll('.drawer-item').forEach(btn => {
+            btn.addEventListener('click', () => { switchView(btn.dataset.view); setDrawer(false); });
+        });
+
+        // ---------- Admin Actions ----------
+        document.getElementById('admin-pass-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const np = document.getElementById('new-admin-pass').value.trim();
+            if (np.length < 6) return showAppMsg('الباسورد لازم يكون 6 حروف على الأقل.', true);
+            const { error } = await sb.auth.updateUser({ password: np });
+            if (error) return showAppMsg('فشل تحديث الباسورد: ' + error.message, true);
+            form.reset();
+            showAppMsg('تم تحديث باسورد الأدمن بنجاح.');
+        });
+
+        window.approveStore = async function(id, months) {
+            const { data: p, error: e1 } = await sb.from('profiles').select('store_name, expires_at').eq('id', id).single();
+            if (e1) return showAppMsg('حصلت مشكلة: ' + e1.message, true);
+
+            const baseTime = (p.expires_at && new Date(p.expires_at).getTime() > Date.now())
+                ? new Date(p.expires_at).getTime() : Date.now();
+            const nextExpire = new Date(baseTime + months * 30 * 24 * 60 * 60 * 1000).toISOString();
+
+            const { error } = await sb.from('profiles').update({ status: 'approved', expires_at: nextExpire }).eq('id', id);
+            if (error) return showAppMsg('فشل التفعيل: ' + error.message, true);
+            await renderAdminTable();
+            showAppMsg(`تم تفعيل ${p.store_name} لمدة ${months} شهر.`);
+        };
+
+        window.suspendStore = async function(id) {
+            const { error } = await sb.from('profiles').update({ status: 'suspended' }).eq('id', id);
+            if (error) return showAppMsg('فشل الإيقاف: ' + error.message, true);
+            await renderAdminTable();
+            showAppMsg('تم إيقاف الحساب.', true);
+        };
+
+        window.deleteStore = async function(id) {
+            if (!confirm('متأكد إنك عايز تحذف المتجر وكل بياناته نهائياً؟')) return;
+            const { error } = await sb.rpc('admin_delete_user', { uid: id });
+            if (error) return showAppMsg('فشل الحذف: ' + error.message, true);
+            await renderAdminTable();
+            showAppMsg('تم حذف المتجر نهائياً.');
+        };
+
+        async function renderAdminTable() {
+            const tbody = document.getElementById('admin-stores-tbody');
+            const { data, error } = await sb.from('profiles').select('*')
+                .neq('role', 'admin').order('created_at', { ascending: false });
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;" class="alert-error">تعذر تحميل المتاجر: ${escapeHtml(error.message)}</td></tr>`;
+                return;
+            }
+            const users = (data || []).map(toUser);
+            document.getElementById('stores-count').textContent = users.length;
+            tbody.innerHTML = '';
+
+            if (!users.length) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">لا توجد طلبات متاجر حالياً.</td></tr>`;
+                return;
+            }
+
+            users.forEach(u => {
+                const active = isSubscriptionActive(u);
+                let statusHtml;
+                if (u.status === 'pending') statusHtml = `<span class="badge badge-loss">قيد الانتظار</span>`;
+                else if (active) statusHtml = `<span class="badge badge-avail">مفعل</span>`;
+                else statusHtml = `<span class="badge badge-sold">منتهي / موقوف</span>`;
+
+                const expText = u.expiresAt ? new Date(u.expiresAt).toLocaleDateString('ar-EG') : '—';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${escapeHtml(u.storeName)}</strong></td>
+                    <td><span class="mono">${escapeHtml(u.email)}</span></td>
+                    <td><span class="mono">${escapeHtml(u.phone || '—')}</span></td>
+                    <td>${statusHtml}</td>
+                    <td>${expText}</td>
+                    <td>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button type="button" class="btn-success btn-sm" onclick="approveStore('${escapeAttr(u.id)}', 1)">قبول / +1 شهر</button>
+                            <button type="button" class="btn-secondary btn-sm" onclick="approveStore('${escapeAttr(u.id)}', 3)">+3 شهور</button>
+                            <button type="button" class="btn-danger btn-sm" onclick="suspendStore('${escapeAttr(u.id)}')">إيقاف</button>
+                            <button type="button" class="btn-danger btn-sm" onclick="deleteStore('${escapeAttr(u.id)}')">حذف</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ---------- Transaction Form ----------
+        const txTypeEl = document.getElementById('tx-type');
+        const saleFieldsEl = document.getElementById('sale-fields');
+        const lossFieldsEl = document.getElementById('loss-fields');
+        const transferFieldsEl = document.getElementById('transfer-fields');
+
+        txTypeEl.addEventListener('change', () => {
+            const v = txTypeEl.value;
+            saleFieldsEl.classList.toggle('hidden', v !== 'sale');
+            lossFieldsEl.classList.toggle('hidden', v !== 'loss');
+            transferFieldsEl.classList.toggle('hidden', v !== 'transfer');
+        });
+
+        document.getElementById('sale-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const type = txTypeEl.value;
+            const game = document.getElementById('tx-game').value.trim();
+            const email = document.getElementById('tx-email').value.trim().toLowerCase();
+            const customer = document.getElementById('tx-customer').value.trim();
+            const notes = document.getElementById('tx-notes').value.trim();
+            const matchedAcc = storeData.fullAccounts.find(a => a.email.toLowerCase() === email);
+
+            let tx, okMsg;
+
+            if (type === 'sale') {
+                const slot = document.getElementById('tx-slot').value;
+                const buyPrice = parseFloat(document.getElementById('tx-buy-price').value) || 0;
+                const sellPrice = parseFloat(document.getElementById('tx-sell-price').value) || 0;
+
+                if (matchedAcc) {
+                    const s = matchedAcc.sold;
+                    const isAlreadySold =
+                        s.full ||
+                        (slot === 'Primary 4' && s.p4) ||
+                        (slot === 'Primary 5' && s.p5) ||
+                        (slot === 'Secondary' && s.sec) ||
+                        (slot === 'Full Account' && (s.p4 || s.p5 || s.sec));
+
+                    if (isAlreadySold) {
+                        return showAppMsg(`لا يمكن إتمام البيع: نسخة (${slot}) أو نسخة متعارضة مباعة بالفعل في الفول أكونت لهذا الإيميل.`, true);
+                    }
+                    if (slot === 'Primary 4') s.p4 = true;
+                    if (slot === 'Primary 5') s.p5 = true;
+                    if (slot === 'Secondary') s.sec = true;
+                    if (slot === 'Full Account') { s.full = true; s.p4 = true; s.p5 = true; s.sec = true; }
+                }
+
+                tx = { id: Date.now(), type: 'sale', game, email, slot, buyPrice, sellPrice, customer, notes };
+                okMsg = matchedAcc ? `تم تسجيل البيع وتحديث حالة (${slot}) في الفول أكونت.` : 'تم تسجيل البيع بنجاح.';
+            } else if (type === 'loss') {
+                const lossAmount = parseFloat(document.getElementById('tx-loss-amount').value) || 0;
+                const lossReason = document.getElementById('tx-loss-reason').value.trim();
+                tx = { id: Date.now(), type: 'loss', game, email, lossAmount, lossReason, customer, notes };
+                okMsg = 'تم تسجيل الخسارة بنجاح.';
+            } else {
+                const fromCustomer = document.getElementById('tx-from-customer').value.trim();
+                const toCustomer = document.getElementById('tx-to-customer').value.trim();
+                tx = { id: Date.now(), type: 'transfer', game, email, fromCustomer, toCustomer, customer, notes };
+                okMsg = 'تم تسجيل حركة نقل / سحب الأكونت بنجاح.';
+            }
+
+            storeData.transactions.unshift(tx);
+            setBusy(form, true);
+            const ok = await persistStoreData();
+            setBusy(form, false);
+            renderAll();
+            if (!ok) return;
+            form.reset();
+            txTypeEl.dispatchEvent(new Event('change'));
+            showAppMsg(okMsg);
+        });
+
+        window.deleteTx = async function(id) {
+            if (!confirm('حذف العملية دي؟')) return;
+            storeData.transactions = storeData.transactions.filter(t => t.id !== id);
+            await persistStoreData();
+            renderAll();
+        };
+
+        // ---------- Render: Sales ----------
+        function renderStats() {
+            let revenue = 0, buyTotal = 0, losses = 0;
+            storeData.transactions.forEach(t => {
+                if (t.type === 'sale') { revenue += Number(t.sellPrice) || 0; buyTotal += Number(t.buyPrice) || 0; }
+                else if (t.type === 'loss') { losses += Number(t.lossAmount) || 0; }
+            });
+            const net = revenue - buyTotal - losses;
+            document.getElementById('stat-revenue').textContent = fmt(revenue);
+            document.getElementById('stat-losses').textContent = fmt(losses);
+            const netEl = document.getElementById('stat-net');
+            netEl.textContent = fmt(net);
+            netEl.style.color = net >= 0 ? '#4ade80' : '#f87171';
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('tx-table-body');
+            const list = storeData.transactions;
+            document.getElementById('tx-count').textContent = list.length;
+            tbody.innerHTML = '';
+
+            if (!list.length) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">لا توجد عمليات مسجلة بعد.</td></tr>`;
+                return;
+            }
+
+            list.forEach(t => {
+                let typeHtml, details, money, who;
+                if (t.type === 'sale') {
+                    typeHtml = `<span class="badge badge-avail">بيع</span>`;
+                    details = escapeHtml(t.slot);
+                    money = `شراء: ${fmt(t.buyPrice)}<br>بيع: <strong style="color:#4ade80;">${fmt(t.sellPrice)}</strong>`;
+                    who = escapeHtml(t.customer || '—');
+                } else if (t.type === 'loss') {
+                    typeHtml = `<span class="badge badge-loss">خسارة</span>`;
+                    details = escapeHtml(t.lossReason || '—');
+                    money = `<strong style="color:#fbbf24;">${fmt(t.lossAmount)}</strong>`;
+                    who = escapeHtml(t.customer || '—');
+                } else {
+                    typeHtml = `<span class="badge badge-sold">نقل / سحب</span>`;
+                    details = '—';
+                    money = '—';
+                    who = `${escapeHtml(t.fromCustomer || '—')} ← ${escapeHtml(t.toCustomer || '—')}` +
+                          (t.customer ? `<br><small style="color:var(--text-muted);">${escapeHtml(t.customer)}</small>` : '');
+                }
+                if (t.notes) details += `<br><small style="color:var(--text-muted);">${escapeHtml(t.notes)}</small>`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${typeHtml}</td>
+                    <td>${escapeHtml(t.game)}</td>
+                    <td><span class="mono">${escapeHtml(t.email)}</span></td>
+                    <td>${details}</td>
+                    <td>${money}</td>
+                    <td>${who}</td>
+                    <td><button type="button" class="btn-danger btn-sm" onclick="deleteTx(${Number(t.id)})">حذف</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ---------- Schema Builder ----------
+        const schemaBuilderEl = document.getElementById('schema-builder');
+
+        function renderSchemaBuilder() {
+            schemaBuilderEl.innerHTML = '';
+            draftSchema.forEach((name, i) => {
+                const row = document.createElement('div');
+                row.className = 'field-row';
+                const input = document.createElement('input');
+                input.type = 'text'; input.value = name; input.placeholder = 'اسم الخانة';
+                input.addEventListener('input', () => { draftSchema[i] = input.value; });
+                const del = document.createElement('button');
+                del.type = 'button'; del.className = 'btn-danger btn-sm'; del.textContent = 'حذف';
+                del.addEventListener('click', () => { draftSchema.splice(i, 1); renderSchemaBuilder(); });
+                row.appendChild(input); row.appendChild(del);
+                schemaBuilderEl.appendChild(row);
+            });
+        }
+
+        document.getElementById('add-schema-field-btn').addEventListener('click', () => {
+            draftSchema.push('');
+            renderSchemaBuilder();
+            const inputs = schemaBuilderEl.querySelectorAll('input');
+            if (inputs.length) inputs[inputs.length - 1].focus();
+        });
+
+        document.getElementById('save-schema-btn').addEventListener('click', async () => {
+            const cleaned = [];
+            draftSchema.forEach(n => { const v = n.trim(); if (v && !cleaned.includes(v)) cleaned.push(v); });
+            storeData.schema = cleaned;
+            draftSchema = [...cleaned];
+            const ok = await persistStoreData();
+            renderAll();
+            if (ok) showAppMsg('تم حفظ الخانات بنجاح.');
+        });
+
+        // ---------- Full Accounts ----------
+        const faDynamicEl = document.getElementById('fa-dynamic-fields');
+
+        function renderFaDynamicFields(values = {}) {
+            faDynamicEl.innerHTML = '';
+            storeData.schema.forEach((label, i) => {
+                const g = document.createElement('div');
+                g.className = 'form-group';
+                const l = document.createElement('label');
+                l.textContent = label;
+                const inp = document.createElement('input');
+                inp.type = 'text'; inp.dataset.field = label; inp.id = 'fa-dyn-' + i;
+                inp.value = values[label] || '';
+                g.appendChild(l); g.appendChild(inp);
+                faDynamicEl.appendChild(g);
+            });
+        }
+
+        function renderFullAccounts() {
+            const thead = document.getElementById('fa-thead');
+            const tbody = document.getElementById('fa-tbody');
+            const list = storeData.fullAccounts;
+            document.getElementById('fa-count').textContent = list.length;
+
+            thead.innerHTML = '<tr><th>اللعبة</th><th>الإيميل</th>' +
+                storeData.schema.map(s => `<th>${escapeHtml(s)}</th>`).join('') +
+                '<th>حالة النسخ</th><th>تحكم</th></tr>';
+
+            tbody.innerHTML = '';
+            if (!list.length) {
+                tbody.innerHTML = `<tr><td colspan="${storeData.schema.length + 4}" style="text-align:center; color:var(--text-muted);">لا توجد حسابات فول أكونت بعد.</td></tr>`;
+                return;
+            }
+
+            list.forEach(a => {
+                const s = a.sold || {};
+                let slotsHtml;
+                if (s.full) {
+                    slotsHtml = `<span class="badge badge-sold">Full Account مباع</span>`;
+                } else {
+                    const b = (label, sold) => `<span class="badge ${sold ? 'badge-sold' : 'badge-avail'}">${label} ${sold ? 'مباع' : 'متاح'}</span>`;
+                    slotsHtml = b('Primary 4', s.p4) + b('Primary 5', s.p5) + b('Secondary', s.sec);
+                }
+                const fieldsCells = storeData.schema.map(label =>
+                    `<td>${a.fields && a.fields[label] ? `<span class="mono">${escapeHtml(a.fields[label])}</span>` : '—'}</td>`
+                ).join('');
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(a.game)}</td>
+                    <td><span class="mono">${escapeHtml(a.email)}</span></td>
+                    ${fieldsCells}
+                    <td><div class="slot-row">${slotsHtml}</div></td>
+                    <td>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn-secondary btn-sm" onclick="editFA(${Number(a.id)})">تعديل</button>
+                            <button type="button" class="btn-danger btn-sm" onclick="deleteFA(${Number(a.id)})">حذف</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('full-acc-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const game = document.getElementById('fa-game').value.trim();
+            const email = document.getElementById('fa-email').value.trim().toLowerCase();
+
+            const fields = {};
+            faDynamicEl.querySelectorAll('input[data-field]').forEach(inp => { fields[inp.dataset.field] = inp.value.trim(); });
+
+            const full = document.getElementById('fa-full').checked;
+            const sold = {
+                p4: full || document.getElementById('fa-p4').checked,
+                p5: full || document.getElementById('fa-p5').checked,
+                sec: full || document.getElementById('fa-sec').checked,
+                full
+            };
+
+            const idx = storeData.fullAccounts.findIndex(a => a.email.toLowerCase() === email);
+            let msg;
+            if (idx >= 0) {
+                storeData.fullAccounts[idx] = { ...storeData.fullAccounts[idx], game, email, fields, sold };
+                msg = 'تم تحديث الفول أكونت.';
+            } else {
+                storeData.fullAccounts.unshift({ id: Date.now(), game, email, fields, sold });
+                msg = 'تمت إضافة الفول أكونت.';
+            }
+
+            setBusy(form, true);
+            const ok = await persistStoreData();
+            setBusy(form, false);
+            renderAll();
+            if (!ok) return;
+            form.reset();
+            showAppMsg(msg);
+        });
+
+        window.editFA = function(id) {
+            const a = storeData.fullAccounts.find(x => x.id === id);
+            if (!a) return;
+            document.getElementById('fa-game').value = a.game;
+            document.getElementById('fa-email').value = a.email;
+            renderFaDynamicFields(a.fields || {});
+            const s = a.sold || {};
+            document.getElementById('fa-p4').checked = !!s.p4;
+            document.getElementById('fa-p5').checked = !!s.p5;
+            document.getElementById('fa-sec').checked = !!s.sec;
+            document.getElementById('fa-full').checked = !!s.full;
+            document.getElementById('full-acc-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        window.deleteFA = async function(id) {
+            if (!confirm('حذف الفول أكونت ده؟')) return;
+            storeData.fullAccounts = storeData.fullAccounts.filter(a => a.id !== id);
+            await persistStoreData();
+            renderAll();
+        };
+
+        // ---------- Render All ----------
+        function renderAll() {
+            if (!storeData) return;
+            renderStats();
+            renderTransactions();
+            renderSchemaBuilder();
+            renderFaDynamicFields();
+            renderFullAccounts();
+        }
+
+        // ---------- Restore Session ----------
+        (async function init() {
+            if (!configured) {
+                showAuthAlert('الموقع لسه مش متوصل بـ Supabase. حط الـ URL والـ anon key في أول الـ script.', true);
+                return;
+            }
+            try {
+                const { data } = await sb.auth.getSession();
+                if (!data.session) return;
+                const user = await fetchProfile(data.session.user.id);
+                if (user && isSubscriptionActive(user)) await enterApp(user);
+                else await sb.auth.signOut();
+            } catch (err) {
+                console.error(err);
+            }
+        })();
+    </script>
+</body>
+</html>
